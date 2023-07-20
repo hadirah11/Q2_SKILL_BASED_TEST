@@ -1,0 +1,68 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define SERVER_PORT 8888
+#define MIN_RANDOM_NUM 100
+#define MAX_RANDOM_NUM 999
+
+int main() {
+    // Seed the random number generator with current time
+    srand(time(NULL));
+
+    int server_socket, client_socket;
+    struct sockaddr_in server_address, client_address;
+    socklen_t client_address_len = sizeof(client_address);
+
+    // Create socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        perror("Socket creation error");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set server_address properties
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(SERVER_PORT);
+    server_address.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket to the specified address and port
+    if (bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+        perror("Bind error");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_socket, 1) < 0) {
+        perror("Listen error");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Waiting for a client to connect...\n");
+
+    // Accept the incoming connection
+    client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len);
+    if (client_socket < 0) {
+        perror("Accept error");
+        exit(EXIT_FAILURE);
+    }
+
+    // Generate a random number within the specified range
+    int random_number = (rand() % (MAX_RANDOM_NUM - MIN_RANDOM_NUM + 1)) + MIN_RANDOM_NUM;
+
+    // Send the random number to the client
+    if (send(client_socket, &random_number, sizeof(random_number), 0) < 0) {
+        perror("Send error");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Random number %d sent to the client.\n", random_number);
+
+    // Close the sockets
+    close(client_socket);
+    close(server_socket);
+
+    return 0;
+}
